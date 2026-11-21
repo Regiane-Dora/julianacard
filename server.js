@@ -1,1 +1,62 @@
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+const historicoPropostas = [];
+
+app.post('/api/analisar-credito', (req, res) => {
+    const { nome, cpf, renda } = req.body;
+
+    if (!nome || !cpf || renda === undefined || renda === "") {
+        return res.status(400).json({ 
+            erro: "Todos os campos são obrigatórios." 
+        });
+    }
+
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+        return res.status(400).json({ 
+            erro: "CPF inválido. Informe os 11 dígitos." 
+        });
+    }
+
+    const valorRenda = parseFloat(renda);
+    let resultado;
+
+    if (valorRenda < 1200) {
+        resultado = {
+            cliente: nome,
+            cpf: cpfLimpo,
+            status: "RECUSADO",
+            limiteAprovado: 0,
+            mensagem: "Desculpe, no momento não conseguimos aprovar seu crédito."
+        };
+    } else {
+        const limite = valorRenda * 0.4;
+        resultado = {
+            cliente: nome,
+            cpf: cpfLimpo,
+            status: "APROVADO",
+            limiteAprovado: Number(limite.toFixed(2)),
+            mensagem: `Seu cartão foi emitido com um limite inicial de R$ ${limite.toFixed(2)}`
+        };
+    }
+
+    historicoPropostas.push({ ...resultado, data: new Date().toISOString() });
+    return res.status(200).json(resultado);
+});
+
+app.get('/api/historico', (req, res) => {
+    return res.status(200).json({
+        totalAnalises: historicoPropostas.length,
+        propostas: historicoPropostas
+    });
+});
+
+app.listen(3000, () => {
+    console.log('Servidor rodando na porta 3000');
+});
 
