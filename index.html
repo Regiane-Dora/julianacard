@@ -1,175 +1,61 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JulianaCard - Solicitação</title>
-    <style>
-        body {
-            background-color: #0f0f12;
-            color: #ffffff;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+const express = require('express');
+const cors = require('cors');
 
-        .container {
-            background-color: #18181f;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid #292933;
-        }
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-        h1 {
-            color: #ff007f;
-            margin-bottom: 5px;
-        }
+const historicoPropostas = [];
 
-        .subtitulo {
-            color: #79798c;
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
+app.post('/api/analisar-credito', (req, res) => {
+    const { nome, cpf, renda } = req.body;
 
-        .campo {
-            text-align: left;
-            margin-bottom: 15px;
-        }
+    if (!nome || !cpf || renda === undefined || renda === "") {
+        return res.status(400).json({ 
+            erro: "Todos os campos são obrigatórios." 
+        });
+    }
 
-        label {
-            display: block;
-            color: #a8a8b3;
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+        return res.status(400).json({ 
+            erro: "CPF inválido. Informe os 11 dígitos." 
+        });
+    }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            background-color: #0f0f12;
-            color: white;
-            border: 1px solid #292933;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            outline: none;
-        }
+    const valorRenda = parseFloat(renda);
+    let resultado;
 
-        input:focus {
-            border-color: #ff007f;
-        }
+    if (valorRenda < 1200) {
+        resultado = {
+            cliente: nome,
+            cpf: cpfLimpo,
+            status: "RECUSADO",
+            limiteAprovado: 0,
+            mensagem: "Desculpe, no momento não conseguimos aprovar seu crédito."
+        };
+    } else {
+        const limite = valorRenda * 0.4;
+        resultado = {
+            cliente: nome,
+            cpf: cpfLimpo,
+            status: "APROVADO",
+            limiteAprovado: Number(limite.toFixed(2)),
+            mensagem: `Seu cartão foi emitido com um limite inicial de R$ ${limite.toFixed(2)}`
+        };
+    }
 
-        button {
-            background-color: #ff007f;
-            color: white;
-            border: none;
-            padding: 15px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 15px;
-        }
+    historicoPropostas.push({ ...resultado, data: new Date().toISOString() });
+    return res.status(200).json(resultado);
+});
 
-        #resultadoBox {
-            display: none;
-            margin-top: 25px;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #20202c;
-        }
+app.get('/api/historico', (req, res) => {
+    return res.status(200).json({
+        totalAnalises: historicoPropostas.length,
+        propostas: historicoPropostas
+    });
+});
 
-        .btn-whatsapp {
-            background-color: #25d366;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>💳 JulianaCard</h1>
-        <div class="subtitulo">Solicite o cartão da nossa loja em 1 minuto</div>
-
-        <!-- Campo Nome -->
-        <div class="campo">
-            <label>Seu Nome Completo:</label>
-            <input type="text" id="nomeCliente" placeholder="Digite seu nome">
-        </div>
-
-        <!-- NOVO CAMPO: CPF -->
-        <div class="campo">
-            <label>Seu CPF:</label>
-            <input type="text" id="cpfCliente" placeholder="000.000.000-00">
-        </div>
-
-        <!-- Campo Renda -->
-        <div class="campo">
-            <label>Renda Mensal (R$):</label>
-            <input type="number" id="rendaCliente" placeholder="Ex: 2500">
-        </div>
-
-        <button onclick="analisarCredito()">🚀 Enviar Proposta</button>
-
-        <!-- Caixa de Resultado -->
-        <div id="resultadoBox">
-            <h3 id="statusTexto"></h3>
-            <p id="limiteTexto"></p>
-            <button class="btn-whatsapp" onclick="enviarWhatsApp()">📲 Enviar pelo WhatsApp</button>
-        </div>
-    </div>
-
-    <script>
-        let msgWhatsApp = "";
-
-        function analisarCredito() {
-            const nome = document.getElementById("nomeCliente").value;
-            const cpf = document.getElementById("cpfCliente").value;
-            const renda = parseFloat(document.getElementById("rendaCliente").value);
-            
-            const resultadoBox = document.getElementById("resultadoBox");
-            const statusTexto = document.getElementById("statusTexto");
-            const limiteTexto = document.getElementById("limiteTexto");
-
-            // Valida se o usuário preencheu o CPF também
-            if (nome === "" || cpf === "" || isNaN(renda)) {
-                alert("Por favor, preencha todos os campos, incluindo o CPF!");
-                return;
-            }
-
-            resultadoBox.style.display = "block";
-
-            if (renda < 1200) {
-                statusTexto.innerText = "❌ Proposta Recusada";
-                statusTexto.style.color = "#ff3333";
-                limiteTexto.innerText = "Desculpe, no momento não conseguimos aprovar seu crédito.";
-                
-                msgWhatsApp = `Olá! A proposta da loja *JulianaCard* para o cliente *${nome}* (CPF: ${cpf}) foi analisada.\n\nStatus: ❌ Recusada de acordo com a renda atual.`;
-            } else {
-                let limiteAprovado = renda * 0.4;
-                
-                statusTexto.innerText = "🎉 PARABÉNS! Cartão Aprovado!";
-                statusTexto.style.color = "#00e676";
-                limiteTexto.innerText = `Seu cartão foi emitido com um limite inicial de R$ ${limiteAprovado.toFixed(2)}`;
-
-                msgWhatsApp = `🔥 *LOJA JULIANACARD - NOVO CARTÃO APROVADO!* \n\n👤 *Cliente:* ${nome}\n🪪 *CPF:* ${cpf}\n💰 *Renda:* R$ ${renda.toFixed(2)}\n💳 *Limite Liberado:* R$ ${limiteAprovado.toFixed(2)}\n\n_Parabéns pela parceria!_`;
-            }
-        }
-
-        function enviarWhatsApp() {
-            const textoCodificado = encodeURIComponent(msgWhatsApp);
-            const linkWhatsApp = `https://whatsapp.com{textoCodificado}`;
-            window.open(linkWhatsApp, '_blank');
-        }
-    </script>
-
-</body>
-</html>
+app.listen(3000, () => {
+    console.log('Servidor rodando na porta 3000');
+});
