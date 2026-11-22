@@ -2,7 +2,8 @@
 
 Sistema web completo composto por uma interface de solicitação de cartão e uma API RESTful em Node.js para análise de crédito, validação de dados e registro de histórico.
 
-## 🚀 Tecnologias Utilizadas
+## 🛠️ Tecnologias Utilizadas
+
 * **Back-end:** Node.js, Express, CORS
 * **Front-end:** HTML5, CSS3, JavaScript (Fetch API)
 
@@ -14,10 +15,14 @@ Sistema web completo composto por uma interface de solicitação de cartão e um
   Retorna o total de análises realizadas e a lista completa de propostas processadas.
 
 ## ⚙️ Como executar o projeto localmente
+
 1. Clone este repositório:
-   `git clone https://github.com`
-2. Instale as dependências:
+      `git clone https://github.com/Regiane-Dora/julianacard.git'
+
+2. Acesse a pasta do projeto:
+   `cd julianacard`
+3. Instale as dependências:
    `npm install`
-3. Inicie o servidor da API:
+4. Inicie o servidor da API:
    `npm start`
-4. Abra o arquivo `index.html` no seu navegador para testar o formulário.
+5. Abra o arquivo `index.html` no seu navegador para testar o formulário.
